@@ -6,6 +6,9 @@ This repository contains source code used to evaluate and test GitHub, GitHub Co
 ## Project Conventions
 - Python scripts use the `.py` extension and follow a 4 whitespace indentation style.
 - Emojis aren't used in code files, documentation, or comments.
+- Code is commented using docstrings and inline comments where necessary.
+- The project uses a `requirements.txt` file to manage Python dependencies.
+- The main script for user interaction is `askgpt.py`.
 
 ## Key Workflows
 * Run locally:

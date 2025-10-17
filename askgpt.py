@@ -318,6 +318,7 @@ askgpt - A command line interface to ChatGPT
 Options:
   --random              Generate a random question and get its answer
   --topic "TOPIC"       Generate a question about a specific topic and get its answer
+  --question "QUESTION" Ask a specific question directly to the model
   --model MODEL         Specify the OpenAI model to use (default: {DEFAULT_MODEL})
   --question-tokens N   Maximum tokens for question generation (default: {DEFAULT_MAX_TOKENS})
   --answer-tokens N     Maximum tokens for answer generation (default: {DEFAULT_MAX_TOKENS})
@@ -337,6 +338,7 @@ Environment Variables:
 Examples:
   python3 askgpt.py --random
   python3 askgpt.py --topic "artificial intelligence"
+  python3 askgpt.py --question "What are the benefits of renewable energy?"
   python3 askgpt.py --topic "cooking" --model gpt-4o-mini
   python3 askgpt.py --random --question-tokens 256 --answer-tokens 1024
 """
@@ -377,6 +379,8 @@ def main():
                        help='Generate a random question and get its answer')
     parser.add_argument('--topic', type=str,
                        help='Generate a question about a specific topic and get its answer')
+    parser.add_argument('--question', type=str,
+                       help='Ask a specific question directly to the model')
     parser.add_argument('--model', type=str, default=DEFAULT_MODEL,
                        help=f'Specify the OpenAI model to use (default: {DEFAULT_MODEL})')
     parser.add_argument('--question-tokens', type=int, default=DEFAULT_MAX_TOKENS,
@@ -416,43 +420,52 @@ def main():
         print("Error: Token counts must be positive integers", file=sys.stderr)
         sys.exit(1)
     
-    # Ensure user specified either --random or --topic (but not both)
-    if not args.random and not args.topic:
-        print("Error: You must specify either --random or --topic", file=sys.stderr)
+    # Ensure user specified one of the operation modes
+    operation_count = sum([args.random, bool(args.topic), bool(args.question)])
+    if operation_count == 0:
+        print("Error: You must specify one of --random, --topic, or --question", file=sys.stderr)
         print("Use --help for usage information", file=sys.stderr)
         sys.exit(1)
     
     # Prevent conflicting operation modes
-    if args.random and args.topic:
-        print("Error: Cannot specify both --random and --topic", file=sys.stderr)
+    if operation_count > 1:
+        print("Error: Cannot specify multiple operation modes (--random, --topic, --question)", file=sys.stderr)
         sys.exit(1)
     
     # Initialize authenticated OpenAI client
     client = get_openai_client()
     
     try:
-        # === QUESTION GENERATION PHASE ===
-        print("Generating question...")
-        if args.random:
-            # Generate a question on any random topic
-            question, question_model = generate_question(
-                client, 
-                model=args.model, 
-                max_tokens=args.question_tokens, 
-                debug=args.debug
-            )
+        # Determine the question to ask based on the operation mode
+        if args.question:
+            # === DIRECT QUESTION MODE ===
+            # User provided the question directly, no generation needed
+            question = args.question
+            question_model = "user-provided"
+            print(f"Question: {question}")
         else:
-            # Generate a question focused on the specified topic
-            question, question_model = generate_question(
-                client, 
-                topic=args.topic, 
-                model=args.model, 
-                max_tokens=args.question_tokens, 
-                debug=args.debug
-            )
-        
-        # Display the generated question with model attribution
-        print(f"Question (via {question_model}): {question}")
+            # === QUESTION GENERATION PHASE ===
+            print("Generating question...")
+            if args.random:
+                # Generate a question on any random topic
+                question, question_model = generate_question(
+                    client, 
+                    model=args.model, 
+                    max_tokens=args.question_tokens, 
+                    debug=args.debug
+                )
+            else:
+                # Generate a question focused on the specified topic
+                question, question_model = generate_question(
+                    client, 
+                    topic=args.topic, 
+                    model=args.model, 
+                    max_tokens=args.question_tokens, 
+                    debug=args.debug
+                )
+            
+            # Display the generated question with model attribution
+            print(f"Question (via {question_model}): {question}")
         
         # === ANSWER GENERATION PHASE ===
         print("\nGenerating answer...")

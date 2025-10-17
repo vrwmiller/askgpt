@@ -104,4 +104,3 @@ python3 askgpt.py --random --debug
 - Python 3.6+
 - OpenAI Python library
 - Valid OpenAI API key
-

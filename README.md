@@ -17,8 +17,8 @@ A command line interface to ChatGPT that generates random questions and provides
 
    ```bash
    python3 -m venv venv && source venv/bin/activate
-   pip3 install -r requirements.txt
    python3 -m pip install --upgrade pip
+   pip3 install -r requirements.txt
    ```
 
 3. Set your OpenAI API key as an environment variable:

@@ -23,8 +23,8 @@ This repository contains source code used to evaluate and test GitHub, GitHub Co
 * Run locally:
     ```bash
     python3 -m venv venv && source venv/bin/activate
-    pip3 install -r requirements.txt
     python3 -m pip install --upgrade pip
+    pip3 install -r requirements.txt
     ```
 
 ## Rate limits & token budgeting

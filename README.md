@@ -37,6 +37,7 @@ python3 askgpt.py [OPTIONS]
 
 - `--random`: Generate a random question and get its answer
 - `--topic "TOPIC"`: Generate a question about a specific topic and get its answer
+- `--question "QUESTION"`: Ask a specific question directly to the model
 - `--model MODEL`: Specify the OpenAI model to use (default: gpt-5)
 - `--question-tokens N`: Maximum tokens for question generation (default: 512)
 - `--answer-tokens N`: Maximum tokens for answer generation (default: 512)
@@ -68,6 +69,12 @@ Ask about a specific topic:
 
 ```bash
 python3 askgpt.py --topic "artificial intelligence"
+```
+
+Ask a direct question:
+
+```bash
+python3 askgpt.py --question "What are the benefits of renewable energy?"
 ```
 
 Use a different model:

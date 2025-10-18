@@ -23,16 +23,16 @@ import os
 
 def run_command(cmd, description):
     """Run a command and handle output"""
-    print(f"\n🚀 {description}")
+    print(f"\n[RUNNING] {description}")
     print(f"Command: {' '.join(cmd)}")
     print("=" * 60)
     
     result = subprocess.run(cmd, capture_output=False)
     
     if result.returncode == 0:
-        print(f"✅ {description} completed successfully")
+        print(f"[SUCCESS] {description} completed successfully")
     else:
-        print(f"❌ {description} failed with exit code {result.returncode}")
+        print(f"[FAILED] {description} failed with exit code {result.returncode}")
         sys.exit(result.returncode)
 
 
@@ -54,7 +54,7 @@ def main():
         subprocess.run(['python3', '-m', 'pytest', '--version'], 
                       capture_output=True, check=True)
     except subprocess.CalledProcessError:
-        print("❌ pytest is not installed. Please run: pip install -r requirements.txt")
+        print("[ERROR] pytest is not installed. Please run: pip install -r requirements.txt")
         sys.exit(1)
     
     # Build the pytest command
@@ -76,7 +76,7 @@ def main():
     run_command(cmd, "Running askgpt tests")
     
     if args.coverage and args.html_coverage:
-        print(f"\n📊 HTML coverage report generated in: {os.path.abspath('htmlcov/index.html')}")
+        print(f"\n[INFO] HTML coverage report generated in: {os.path.abspath('htmlcov/index.html')}")
         print("Open this file in your browser to view detailed coverage information.")
 
 

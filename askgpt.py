@@ -38,17 +38,15 @@ def setup_logging(debug=False, log_file=None):
     log_level = logging.DEBUG if debug else logging.INFO
     log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     
-    # Configure root logger
-    logging.basicConfig(
-        level=log_level,
-        format=log_format,
-        datefmt='%Y-%m-%d %H:%M:%S',
-        handlers=[]  # We'll add handlers manually
-    )
+    # Clear any existing root logger handlers to prevent interference
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
     
     # Create logger for this module
     logger = logging.getLogger('askgpt')
     logger.setLevel(log_level)
+    logger.propagate = False  # Prevent propagation to root logger
     
     # Remove any existing handlers to avoid duplicates
     logger.handlers.clear()
@@ -60,6 +58,10 @@ def setup_logging(debug=False, log_file=None):
         console_formatter = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
         console_handler.setFormatter(console_formatter)
         logger.addHandler(console_handler)
+    else:
+        # Add a NullHandler to prevent the lastResort handler from being used
+        null_handler = logging.NullHandler()
+        logger.addHandler(null_handler)
     
     # Add file handler if log_file is specified
     if log_file is not None:

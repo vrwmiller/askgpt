@@ -214,6 +214,60 @@ class TestEventLogging(unittest.TestCase):
             if temp_log_path and os.path.exists(temp_log_path):
                 os.unlink(temp_log_path)
 
+    def test_fallback_messages_not_in_console(self):
+        """Test that fallback warning messages don't appear in console without debug"""
+        # Capture stderr to check for console output
+        captured_output = io.StringIO()
+        
+        with patch('sys.stderr', captured_output):
+            logger = setup_logging(debug=False, log_file=None)
+            # Simulate the exact warning message from the fallback logic
+            logger.warning("Model gpt-5 returned short/empty question: ''")
+            logger.warning("Model gpt-5 returned short/empty answer: ''")
+        
+        # Should have no console output
+        output = captured_output.getvalue()
+        self.assertEqual(output, "")
+        
+        # Verify logger has NullHandler instead of console handler
+        null_handlers = [h for h in logger.handlers if isinstance(h, logging.NullHandler)]
+        self.assertEqual(len(null_handlers), 1)
+
+    def test_fallback_messages_in_file_logging(self):
+        """Test that fallback messages appear in file logs even without console logging"""
+        import tempfile
+        import os
+        
+        temp_log_path = None
+        try:
+            # Create a temporary log file
+            temp_fd, temp_log_path = tempfile.mkstemp(suffix='.log')
+            os.close(temp_fd)  # Close the file descriptor
+            
+            # Capture stderr to verify no console output
+            captured_output = io.StringIO()
+            
+            with patch('sys.stderr', captured_output):
+                logger = setup_logging(debug=False, log_file=temp_log_path)
+                # Simulate the exact warning messages from fallback logic
+                logger.warning("Model gpt-5 returned short/empty question: ''")
+                logger.warning("Model gpt-5 returned short/empty answer: ''")
+            
+            # Should have no console output
+            console_output = captured_output.getvalue()
+            self.assertEqual(console_output, "")
+            
+            # Should have file output
+            with open(temp_log_path, 'r') as f:
+                file_content = f.read()
+                self.assertIn("Model gpt-5 returned short/empty question", file_content)
+                self.assertIn("Model gpt-5 returned short/empty answer", file_content)
+                
+        finally:
+            # Clean up the temporary file
+            if temp_log_path and os.path.exists(temp_log_path):
+                os.unlink(temp_log_path)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

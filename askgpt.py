@@ -21,11 +21,170 @@ import argparse
 import logging
 import os
 import random
+import shutil
 import sys
+import textwrap
 import time
 from openai import OpenAI
 
 # Logging configuration
+def get_terminal_width():
+    """
+    Get the current terminal width, with fallback to 80 columns.
+    
+    Returns:
+        int: Terminal width in characters
+    """
+    try:
+        return shutil.get_terminal_size().columns
+    except (OSError, AttributeError):
+        return 80  # Fallback width for non-interactive environments
+
+
+def format_text_for_terminal(text, prefix="", indent=0):
+    """
+    Format text to fit terminal width while preserving original formatting.
+    
+    This function ensures that long text output doesn't wrap awkwardly
+    in the terminal by inserting proper line breaks at word boundaries,
+    while preserving lists, code blocks, and other structured formatting.
+    
+    Args:
+        text (str): The text to format
+        prefix (str): Prefix to add to the first line (e.g., "Question: ")
+        indent (int): Number of spaces to indent continuation lines
+    
+    Returns:
+        str: Formatted text with proper line breaks and preserved formatting
+    """
+    if not text:
+        return f"{prefix}{text}"
+    
+    terminal_width = get_terminal_width()
+    
+    # Calculate available width for text content
+    first_line_width = terminal_width - len(prefix)
+    continuation_width = terminal_width - indent
+    
+    # Ensure minimum usable width
+    first_line_width = max(first_line_width, 40)
+    continuation_width = max(continuation_width, 40)
+    
+    # Split text into paragraphs to preserve structure
+    paragraphs = text.split('\n')
+    formatted_paragraphs = []
+    
+    for paragraph in paragraphs:
+        # Detect and preserve special formatting
+        stripped = paragraph.strip()
+        
+        # Preserve code blocks (lines starting with ``` or indented with 4+ spaces)
+        if stripped.startswith('```') or paragraph.startswith('    '):
+            formatted_paragraphs.append(paragraph)
+            continue
+            
+        # Preserve lists (ordered and unordered)
+        if (stripped.startswith(('- ', '* ', '+ ')) or  # Unordered lists
+            (len(stripped) > 2 and stripped[0].isdigit() and stripped[1:3] in ['. ', ') '])):  # Ordered lists
+            
+            # For lists, we need to handle the bullet/number separately from the content
+            if stripped.startswith(('- ', '* ', '+ ')):
+                list_marker = stripped[:2]  # "- ", "* ", or "+ "
+                list_content = stripped[2:]
+            else:
+                # Find the end of the number and separator
+                marker_end = 2
+                while marker_end < len(stripped) and stripped[marker_end-1:marker_end+1] not in ['. ', ') ']:
+                    marker_end += 1
+                list_marker = stripped[:marker_end]
+                list_content = stripped[marker_end:]
+            
+            # Wrap the list content while preserving the marker
+            if list_content.strip():
+                wrapped_content = _wrap_text_preserving_words(
+                    list_content.strip(), 
+                    first_line_width - len(list_marker),
+                    continuation_width - len(list_marker)
+                )
+                
+                # Format the list item
+                lines = wrapped_content.split('\n')
+                formatted_lines = [f"{list_marker}{lines[0]}"]
+                list_indent = " " * len(list_marker)
+                for line in lines[1:]:
+                    formatted_lines.append(f"{list_indent}{line}")
+                formatted_paragraphs.append('\n'.join(formatted_lines))
+            else:
+                formatted_paragraphs.append(list_marker)
+            continue
+        
+        # Handle regular paragraphs
+        if stripped:
+            wrapped = _wrap_text_preserving_words(stripped, first_line_width, continuation_width)
+            formatted_paragraphs.append(wrapped)
+        else:
+            # Preserve empty lines
+            formatted_paragraphs.append("")
+    
+    # Join paragraphs back together
+    formatted_text = '\n'.join(formatted_paragraphs)
+    
+    # Split into lines and apply prefix/indentation
+    lines = formatted_text.split('\n')
+    if not lines:
+        return f"{prefix}{text}"
+    
+    # First line gets the prefix
+    result_lines = [f"{prefix}{lines[0]}"]
+    
+    # Continuation lines get indentation
+    indent_str = " " * indent
+    for line in lines[1:]:
+        result_lines.append(f"{indent_str}{line}")
+    
+    return '\n'.join(result_lines)
+
+
+def _wrap_text_preserving_words(text, first_line_width, continuation_width):
+    """
+    Helper function to wrap text at word boundaries.
+    
+    Args:
+        text (str): Text to wrap
+        first_line_width (int): Width available for first line
+        continuation_width (int): Width available for continuation lines
+    
+    Returns:
+        str: Wrapped text
+    """
+    words = text.split()
+    if not words:
+        return text
+    
+    lines = []
+    current_line = ""
+    current_width = first_line_width
+    
+    for word in words:
+        # Check if adding this word would exceed the current line width
+        test_line = f"{current_line} {word}".strip()
+        
+        if len(test_line) <= current_width:
+            current_line = test_line
+        else:
+            # Current line is full, start a new line
+            if current_line:
+                lines.append(current_line)
+            current_line = word
+            current_width = continuation_width
+    
+    # Add the last line if it has content
+    if current_line:
+        lines.append(current_line)
+    
+    return '\n'.join(lines)
+
+
 def setup_logging(debug=False, log_file=None):
     """
     Configure logging for the application.
@@ -603,7 +762,7 @@ def main():
             logger.info("Using direct question mode")
             question = args.question
             question_model = "user-provided"
-            print(f"Question: {question}")
+            print(format_text_for_terminal(question, "Question: ", 10))
         else:
             # === QUESTION GENERATION PHASE ===
             if args.random:
@@ -633,7 +792,8 @@ def main():
                 )
             
             # Display the generated question with model attribution
-            print(f"Question (via {question_model}): {question}")
+            question_prefix = f"Question (via {question_model}): "
+            print(format_text_for_terminal(question, question_prefix, len(question_prefix)))
         
         # === ANSWER GENERATION PHASE ===
         print("\nGenerating answer...")
@@ -646,7 +806,8 @@ def main():
         )
         
         # Display the generated answer with model attribution
-        print(f"Answer (via {answer_model}): {answer}")
+        answer_prefix = f"Answer (via {answer_model}): "
+        print(format_text_for_terminal(answer, answer_prefix, len(answer_prefix)))
         
         logger.info("=== askgpt session completed successfully ===")
         

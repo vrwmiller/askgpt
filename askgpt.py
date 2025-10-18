@@ -32,7 +32,7 @@ def setup_logging(debug=False, log_file=None):
     
     Args:
         debug (bool): Whether to enable console logging and debug-level logging
-        log_file (str, optional): Path to log file. If None, defaults to 'askgpt.log'.
+        log_file (str, optional): Path to log file. If None, defaults to 'logs/askgpt.log'.
     """
     log_level = logging.DEBUG if debug else logging.INFO
     log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -62,9 +62,9 @@ def setup_logging(debug=False, log_file=None):
         null_handler = logging.NullHandler()
         logger.addHandler(null_handler)
     
-    # Always add file handler - default to 'askgpt.log' if no file specified
+    # Always add file handler - default to 'logs/askgpt.log' if no file specified
     if log_file is None or not log_file.strip():
-        log_file = 'askgpt.log'
+        log_file = 'logs/askgpt.log'
     
     try:
         file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
@@ -454,7 +454,7 @@ Options:
   --question-tokens N   Maximum tokens for question generation (default: {DEFAULT_MAX_TOKENS})
   --answer-tokens N     Maximum tokens for answer generation (default: {DEFAULT_MAX_TOKENS})
   --debug               Enable debug output showing warnings and fallback attempts
-  --log-file [PATH]     Specify log file path (default: askgpt.log)
+  --log-file [PATH]     Specify log file path (default: logs/askgpt.log)
   --help, -h            Show this help message
 
 Available Models:
@@ -503,8 +503,8 @@ def main():
         add_help=False  # We'll handle help manually to include model list
     )
     parser.add_argument('--debug', action='store_true', help='Enable debug output')
-    parser.add_argument('--log-file', type=str, default=None, nargs='?', const='askgpt.log',
-                       help='Specify log file path (default: askgpt.log)')
+    parser.add_argument('--log-file', type=str, default=None, nargs='?', const='logs/askgpt.log',
+                       help='Specify log file path (default: logs/askgpt.log)')
     # Add other arguments for initial parsing
     parser.add_argument('--random', action='store_true')
     parser.add_argument('--topic')
@@ -549,8 +549,8 @@ def main():
                        help='Show this help message')
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug output showing warnings and fallback attempts')
-    parser.add_argument('--log-file', type=str, default=None, nargs='?', const='askgpt.log',
-                       help='Specify log file path (default: askgpt.log)')
+    parser.add_argument('--log-file', type=str, default=None, nargs='?', const='logs/askgpt.log',
+                       help='Specify log file path (default: logs/askgpt.log)')
     
     args = parser.parse_args()
     

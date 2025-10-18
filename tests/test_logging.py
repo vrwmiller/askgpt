@@ -172,9 +172,11 @@ class TestEventLogging(unittest.TestCase):
             self.assertEqual(len(null_handlers), 1)
             
         finally:
-            # Clean up the default log file
+            # Clean up any default log files (both old and new locations)
             if os.path.exists('askgpt.log'):
                 os.unlink('askgpt.log')
+            if os.path.exists('logs/askgpt.log'):
+                os.unlink('logs/askgpt.log')
 
     def test_console_logging_only_with_debug(self):
         """Test that console logging only works when debug=True"""
@@ -202,9 +204,11 @@ class TestEventLogging(unittest.TestCase):
             self.assertEqual(len(file_handlers), 1)
             
         finally:
-            # Clean up the default log file
+            # Clean up any default log files (both old and new locations)
             if os.path.exists('askgpt.log'):
                 os.unlink('askgpt.log')
+            if os.path.exists('logs/askgpt.log'):
+                os.unlink('logs/askgpt.log')
 
     def test_file_logging_without_console(self):
         """Test that file logging works without console logging"""
@@ -265,9 +269,11 @@ class TestEventLogging(unittest.TestCase):
             self.assertEqual(len(file_handlers), 1)
             
         finally:
-            # Clean up the default log file
+            # Clean up any default log files (both old and new locations)
             if os.path.exists('askgpt.log'):
                 os.unlink('askgpt.log')
+            if os.path.exists('logs/askgpt.log'):
+                os.unlink('logs/askgpt.log')
 
     def test_always_logs_to_file(self):
         """Test that logging always creates a file even when no log_file is specified"""
@@ -280,18 +286,18 @@ class TestEventLogging(unittest.TestCase):
             logger.warning("Warning should also go to default log file")
             
             # Verify the default log file was created
-            self.assertTrue(os.path.exists('askgpt.log'))
+            self.assertTrue(os.path.exists('logs/askgpt.log'))
             
             # Verify the content is in the file
-            with open('askgpt.log', 'r') as f:
+            with open('logs/askgpt.log', 'r') as f:
                 content = f.read()
                 self.assertIn("Test message should go to default log file", content)
                 self.assertIn("Warning should also go to default log file", content)
                 
         finally:
             # Clean up the default log file
-            if os.path.exists('askgpt.log'):
-                os.unlink('askgpt.log')
+            if os.path.exists('logs/askgpt.log'):
+                os.unlink('logs/askgpt.log')
 
     def test_fallback_messages_in_file_logging(self):
         """Test that fallback messages appear in file logs even without console logging"""

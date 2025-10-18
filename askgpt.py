@@ -235,7 +235,23 @@ def generate_question(client, topic=None, model=DEFAULT_MODEL, max_tokens=DEFAUL
         
         return question, model
     except Exception as e:
-        print(f"Error generating question: {e}", file=sys.stderr)
+        if debug:
+            print(f"Error generating question with {model}: {e}", file=sys.stderr)
+        
+        # Try fallback models if current model fails
+        for fallback_model in FALLBACK_MODELS:
+            if fallback_model != model:  # Don't retry the same model
+                try:
+                    if debug:
+                        print(f"Trying fallback model: {fallback_model}", file=sys.stderr)
+                    return generate_question(client, topic, fallback_model, max_tokens, debug)
+                except Exception as fallback_error:
+                    if debug:
+                        print(f"Fallback model {fallback_model} also failed: {fallback_error}", file=sys.stderr)
+                    continue
+        
+        # If all models fail, return error message
+        print(f"Error: All models failed to generate question. Last error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -287,7 +303,23 @@ def get_answer(client, question, model=DEFAULT_MODEL, max_tokens=DEFAULT_MAX_TOK
         
         return answer, model
     except Exception as e:
-        print(f"Error getting answer: {e}", file=sys.stderr)
+        if debug:
+            print(f"Error getting answer with {model}: {e}", file=sys.stderr)
+        
+        # Try fallback models if current model fails
+        for fallback_model in FALLBACK_MODELS:
+            if fallback_model != model:  # Don't retry the same model
+                try:
+                    if debug:
+                        print(f"Trying fallback model: {fallback_model}", file=sys.stderr)
+                    return get_answer(client, question, fallback_model, max_tokens, debug)
+                except Exception as fallback_error:
+                    if debug:
+                        print(f"Fallback model {fallback_model} also failed: {fallback_error}", file=sys.stderr)
+                    continue
+        
+        # If all models fail, return error message
+        print(f"Error: All models failed to get answer. Last error: {e}", file=sys.stderr)
         sys.exit(1)
 
 

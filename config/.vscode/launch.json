@@ -12,6 +12,14 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "askgpt with args",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "askgpt.py",
+            "args": ["--random", "--debug"],
+            "console": "integratedTerminal"
+        },
+        {
             "type": "vscode-chat-replay",
             "request": "launch",
             "name": "Debug Chat Replay",

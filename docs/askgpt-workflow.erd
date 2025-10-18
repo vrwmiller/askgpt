@@ -1,0 +1,124 @@
+# askgpt Workflow ERD
+
+This Entity Relationship Diagram (ERD) models the data structures and relationships within the askgpt application workflow.
+
+```mermaid
+erDiagram
+    SESSION {
+        string session_id PK
+        datetime start_time
+        string command_args
+        boolean debug_mode
+        string log_file_path
+        string status
+    }
+    
+    USER_INPUT {
+        string input_id PK
+        string session_id FK
+        string operation_mode
+        string topic
+        string direct_question
+        string model_requested
+        int question_tokens
+        int answer_tokens
+    }
+    
+    MODEL_DISCOVERY {
+        string discovery_id PK
+        string session_id FK
+        datetime fetch_time
+        boolean api_success
+        string[] available_models
+        string[] fallback_models
+        string selected_model
+    }
+    
+    QUESTION_GENERATION {
+        string question_id PK
+        string session_id FK
+        string source_type
+        string topic
+        string model_used
+        int max_tokens
+        float temperature
+        string prompt
+        string generated_question
+        int response_length
+        float generation_time
+        boolean fallback_used
+    }
+    
+    ANSWER_GENERATION {
+        string answer_id PK
+        string session_id FK
+        string question_id FK
+        string question_text
+        string model_used
+        int max_tokens
+        float temperature
+        string generated_answer
+        int response_length
+        float generation_time
+        boolean fallback_used
+    }
+    
+    API_CALL {
+        string call_id PK
+        string session_id FK
+        string model_name
+        string call_type
+        datetime start_time
+        datetime end_time
+        float duration
+        string status
+        string error_message
+        boolean uses_max_completion_tokens
+        boolean supports_custom_temperature
+    }
+    
+    FALLBACK_ATTEMPT {
+        string attempt_id PK
+        string session_id FK
+        string original_model
+        string fallback_model
+        string operation_type
+        boolean success
+        string error_reason
+        int attempt_order
+    }
+    
+    LOG_EVENT {
+        string event_id PK
+        string session_id FK
+        datetime timestamp
+        string level
+        string message
+        string component
+        string operation
+    }
+    
+    %% Relationships
+    SESSION ||--o{ USER_INPUT : "receives"
+    SESSION ||--|| MODEL_DISCOVERY : "performs"
+    SESSION ||--o{ QUESTION_GENERATION : "executes"
+    SESSION ||--|| ANSWER_GENERATION : "produces"
+    SESSION ||--o{ API_CALL : "makes"
+    SESSION ||--o{ FALLBACK_ATTEMPT : "triggers"
+    SESSION ||--o{ LOG_EVENT : "generates"
+    
+    USER_INPUT ||--o| QUESTION_GENERATION : "initiates"
+    QUESTION_GENERATION ||--|| ANSWER_GENERATION : "feeds_into"
+    
+    MODEL_DISCOVERY ||--o{ API_CALL : "validates_with"
+    QUESTION_GENERATION ||--o{ API_CALL : "uses"
+    ANSWER_GENERATION ||--o{ API_CALL : "uses"
+    
+    API_CALL ||--o{ FALLBACK_ATTEMPT : "triggers_on_failure"
+    QUESTION_GENERATION ||--o{ FALLBACK_ATTEMPT : "may_require"
+    ANSWER_GENERATION ||--o{ FALLBACK_ATTEMPT : "may_require"
+    
+    LOG_EVENT }o--|| SESSION : "belongs_to"
+    LOG_EVENT }o--o| API_CALL : "documents"
+    LOG_EVENT }o--o| FALLBACK_ATTEMPT : "records"
+```

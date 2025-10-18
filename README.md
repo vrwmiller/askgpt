@@ -1,14 +1,46 @@
 # askgpt
 
-A command line interface to ChatGPT that generates random questions and provides answers using OpenAI's language models.
+A powerful and flexible command-line interface for OpenAI's ChatGPT that transforms how you interact with AI language models. askgpt provides three distinct modes of operation: generate thought-provoking random questions, explore specific topics through AI-generated questions, or ask direct questions — all with intelligent model selection, robust error handling, and comprehensive logging.
+
+## Why askgpt?
+
+**🎯 Focused Interaction**: Unlike web interfaces, askgpt is designed for focused, distraction-free AI conversations directly in your terminal.
+
+**🔧 Developer-Friendly**: Built with automation in mind, featuring comprehensive logging, error handling, and scriptable operations.
+
+**🚀 Intelligent Resilience**: Automatic model fallback ensures reliability even when primary models are unavailable or unresponsive.
+
+**📊 Terminal-Optimized**: Smart text formatting prevents awkward word wrapping while preserving structured content like lists and code blocks.
+
+**🔍 Exploration Tool**: Perfect for brainstorming, research, learning, and discovery through AI-generated questions on any topic.
 
 ## Features
 
-- Generate random questions and get AI-powered answers
-- Ask questions about specific topics
-- Customize which OpenAI model to use
-- Control token limits for both questions and answers
-- Seeded randomization to prevent repetitive questions
+- **Three Operation Modes**:
+  - **Random Questions**: Generate unexpected, thought-provoking questions on any topic
+  - **Topic Exploration**: Create focused questions about specific subjects you want to explore
+  - **Direct Q&A**: Ask specific questions directly for immediate answers
+
+- **Smart Model Handling**:
+  - Dynamic model discovery from OpenAI's latest API
+  - Automatic parameter adaptation for different model generations
+  - Intelligent fallback chain through 6 different models for maximum reliability
+  - Support for both legacy and cutting-edge models (gpt-3.5-turbo through gpt-5)
+
+- **Professional Output**:
+  - Terminal-aware text formatting that respects your screen width
+  - Preserves structured content (lists, code blocks, formatting)
+  - Clean, readable output without awkward line breaks
+
+- **Comprehensive Logging**:
+  - Event-focused logging that tracks operations without storing sensitive content
+  - Debug mode for troubleshooting and development
+  - Configurable log file locations with automatic directory creation
+
+- **Robust Error Handling**:
+  - Graceful degradation when models fail or return empty responses
+  - Clear error messages and helpful troubleshooting information
+  - Automatic retry logic with different models
 
 ## Project Structure
 

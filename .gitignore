@@ -18,3 +18,10 @@ askgpt*.log
 .*.bak
 .*.tmp
 .openai-api-key
+
+# cache files
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

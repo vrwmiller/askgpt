@@ -42,6 +42,7 @@ python3 askgpt.py [OPTIONS]
 - `--question-tokens N`: Maximum tokens for question generation (default: 512)
 - `--answer-tokens N`: Maximum tokens for answer generation (default: 512)
 - `--debug`: Enable debug output showing warnings and fallback attempts
+- `--log-file PATH`: Path to log file (default: askgpt.log)
 - `--help`, `-h`: Show help message
 
 ### Available Models
@@ -95,9 +96,58 @@ Enable debug output to see warnings and fallback attempts:
 python3 askgpt.py --random --debug
 ```
 
+Specify a custom log file:
+
+```bash
+python3 askgpt.py --random --log-file ./logs/session.log
+```
+
 ## Environment Variables
 
 - `OPENAI_API_KEY`: Your OpenAI API key (required)
+
+## Event Logging
+
+The application includes comprehensive event logging to track operations and troubleshoot issues.
+
+### Log Levels
+
+- **INFO**: Session events, mode selection, API interactions, and completion status
+- **WARNING**: Short/empty responses, API failures, and fallback attempts  
+- **ERROR**: Critical errors, authentication failures, and system issues
+
+### Log Output
+
+Logs are written to both the console and a log file:
+
+- **Console**: Real-time output displayed in your terminal
+- **Log File**: Persistent storage (default: `askgpt.log` in current directory)
+
+Use `--log-file` to specify a different log file path, or set to an empty string to disable file logging.
+
+Example log output:
+
+```text
+2025-10-17 20:57:33 - askgpt - INFO - === askgpt session started ===
+2025-10-17 20:57:33 - askgpt - INFO - Command line arguments: --random
+2025-10-17 20:57:33 - askgpt - INFO - Using random question generation mode
+2025-10-17 20:57:33 - askgpt - INFO - Generating question random topic using model: gpt-5
+2025-10-17 20:57:34 - askgpt - INFO - Chat completion successful in 0.85s
+2025-10-17 20:57:34 - askgpt - INFO - Question generated successfully (length: 67 chars)
+2025-10-17 20:57:35 - askgpt - INFO - Answer generated successfully (length: 342 chars)
+2025-10-17 20:57:35 - askgpt - INFO - === askgpt session completed successfully ===
+```
+
+### Privacy & Content Logging
+
+The logging system focuses on **events, not content**:
+
+- ✅ **Logged**: Operation types, model names, response times, error messages, token counts
+- ❌ **Not Logged**: API keys, user questions, AI responses, or other sensitive content
+
+### Debug Mode
+
+Use `--debug` to enable verbose logging with additional details about warnings and fallback attempts.
 
 ## Requirements
 

@@ -104,3 +104,54 @@ python3 askgpt.py --random --debug
 - Python 3.6+
 - OpenAI Python library
 - Valid OpenAI API key
+
+## Testing
+
+The project includes a comprehensive unit test suite located in the `tests/` directory.
+
+### Running Tests
+
+Run all tests:
+
+```bash
+python3 -m pytest
+```
+
+Run tests with verbose output:
+
+```bash
+python3 -m pytest -v
+```
+
+Run tests with coverage:
+
+```bash
+python3 -m pytest --cov=askgpt --cov-report=term-missing
+```
+
+### Custom Test Runner
+
+Use the custom test runner for additional options:
+
+```bash
+# Basic test run
+python3 run_tests.py
+
+# With coverage and verbose output
+python3 run_tests.py --coverage --verbose
+
+# Generate HTML coverage report
+python3 run_tests.py --coverage --html-coverage
+```
+
+### Test Structure
+
+- `tests/test_askgpt.py` - Main unit test suite with 14 tests covering:
+  - Model compatibility functions
+  - OpenAI API integration
+  - Question generation logic
+  - Answer generation logic
+  - Configuration validation
+  - Error handling and fallback mechanisms
+
+The test suite achieves 39% code coverage on core functionality and includes proper mocking of OpenAI API calls for reliable testing.

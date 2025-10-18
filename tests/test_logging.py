@@ -145,40 +145,66 @@ class TestEventLogging(unittest.TestCase):
 
     def test_no_console_logging_by_default(self):
         """Test that console logging is disabled by default"""
+        import os
+        
         # Capture stderr to check for console output
         captured_output = io.StringIO()
         
-        with patch('sys.stderr', captured_output):
-            logger = setup_logging(debug=False, log_file=None)
-            logger.info("This should not appear in console")
-            logger.warning("This warning should not appear in console")
-        
-        # Should have no console output
-        output = captured_output.getvalue()
-        self.assertEqual(output, "")
-        
-        # Verify logger has no console handlers
-        console_handlers = [h for h in logger.handlers if isinstance(h, logging.StreamHandler)]
-        self.assertEqual(len(console_handlers), 0)
+        try:
+            with patch('sys.stderr', captured_output):
+                logger = setup_logging(debug=False, log_file=None)
+                logger.info("This should not appear in console")
+                logger.warning("This warning should not appear in console")
+            
+            # Should have no console output
+            output = captured_output.getvalue()
+            self.assertEqual(output, "")
+            
+            # Verify logger has no console StreamHandler (only file handlers and NullHandler)
+            console_handlers = [h for h in logger.handlers 
+                              if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler)]
+            self.assertEqual(len(console_handlers), 0)
+            
+            # Verify we have a file handler and null handler
+            file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+            null_handlers = [h for h in logger.handlers if isinstance(h, logging.NullHandler)]
+            self.assertEqual(len(file_handlers), 1)
+            self.assertEqual(len(null_handlers), 1)
+            
+        finally:
+            # Clean up the default log file
+            if os.path.exists('askgpt.log'):
+                os.unlink('askgpt.log')
 
     def test_console_logging_only_with_debug(self):
         """Test that console logging only works when debug=True"""
+        import os
+        
         # Capture stderr to check for console output
         captured_output = io.StringIO()
         
-        with patch('sys.stderr', captured_output):
-            logger = setup_logging(debug=True, log_file=None)
-            logger.info("This should appear in console")
-            logger.warning("This warning should appear in console")
-        
-        # Should have console output when debug=True
-        output = captured_output.getvalue()
-        self.assertIn("This should appear in console", output)
-        self.assertIn("This warning should appear in console", output)
-        
-        # Verify logger has console handler
-        console_handlers = [h for h in logger.handlers if isinstance(h, logging.StreamHandler)]
-        self.assertEqual(len(console_handlers), 1)
+        try:
+            with patch('sys.stderr', captured_output):
+                logger = setup_logging(debug=True, log_file=None)
+                logger.info("This should appear in console")
+                logger.warning("This warning should appear in console")
+            
+            # Should have console output when debug=True
+            output = captured_output.getvalue()
+            self.assertIn("This should appear in console", output)
+            self.assertIn("This warning should appear in console", output)
+            
+            # Verify logger has console handler (but not FileHandler when checking for console)
+            console_handlers = [h for h in logger.handlers 
+                              if isinstance(h, logging.StreamHandler) and not isinstance(h, logging.FileHandler)]
+            file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+            self.assertEqual(len(console_handlers), 1)
+            self.assertEqual(len(file_handlers), 1)
+            
+        finally:
+            # Clean up the default log file
+            if os.path.exists('askgpt.log'):
+                os.unlink('askgpt.log')
 
     def test_file_logging_without_console(self):
         """Test that file logging works without console logging"""
@@ -216,22 +242,56 @@ class TestEventLogging(unittest.TestCase):
 
     def test_fallback_messages_not_in_console(self):
         """Test that fallback warning messages don't appear in console without debug"""
+        import os
+        
         # Capture stderr to check for console output
         captured_output = io.StringIO()
         
-        with patch('sys.stderr', captured_output):
+        try:
+            with patch('sys.stderr', captured_output):
+                logger = setup_logging(debug=False, log_file=None)
+                # Simulate the exact warning message from the fallback logic
+                logger.warning("Model gpt-5 returned short/empty question: ''")
+                logger.warning("Model gpt-5 returned short/empty answer: ''")
+            
+            # Should have no console output
+            output = captured_output.getvalue()
+            self.assertEqual(output, "")
+            
+            # Verify logger has NullHandler and FileHandler
+            null_handlers = [h for h in logger.handlers if isinstance(h, logging.NullHandler)]
+            file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
+            self.assertEqual(len(null_handlers), 1)
+            self.assertEqual(len(file_handlers), 1)
+            
+        finally:
+            # Clean up the default log file
+            if os.path.exists('askgpt.log'):
+                os.unlink('askgpt.log')
+
+    def test_always_logs_to_file(self):
+        """Test that logging always creates a file even when no log_file is specified"""
+        import os
+        
+        try:
+            # Setup logging without specifying a log file
             logger = setup_logging(debug=False, log_file=None)
-            # Simulate the exact warning message from the fallback logic
-            logger.warning("Model gpt-5 returned short/empty question: ''")
-            logger.warning("Model gpt-5 returned short/empty answer: ''")
-        
-        # Should have no console output
-        output = captured_output.getvalue()
-        self.assertEqual(output, "")
-        
-        # Verify logger has NullHandler instead of console handler
-        null_handlers = [h for h in logger.handlers if isinstance(h, logging.NullHandler)]
-        self.assertEqual(len(null_handlers), 1)
+            logger.info("Test message should go to default log file")
+            logger.warning("Warning should also go to default log file")
+            
+            # Verify the default log file was created
+            self.assertTrue(os.path.exists('askgpt.log'))
+            
+            # Verify the content is in the file
+            with open('askgpt.log', 'r') as f:
+                content = f.read()
+                self.assertIn("Test message should go to default log file", content)
+                self.assertIn("Warning should also go to default log file", content)
+                
+        finally:
+            # Clean up the default log file
+            if os.path.exists('askgpt.log'):
+                os.unlink('askgpt.log')
 
     def test_fallback_messages_in_file_logging(self):
         """Test that fallback messages appear in file logs even without console logging"""

@@ -32,8 +32,7 @@ def setup_logging(debug=False, log_file=None):
     
     Args:
         debug (bool): Whether to enable console logging and debug-level logging
-        log_file (str, optional): Path to log file. If None, no file logging.
-                                 If provided but empty string, defaults to 'askgpt.log'.
+        log_file (str, optional): Path to log file. If None, defaults to 'askgpt.log'.
     """
     log_level = logging.DEBUG if debug else logging.INFO
     log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -63,21 +62,19 @@ def setup_logging(debug=False, log_file=None):
         null_handler = logging.NullHandler()
         logger.addHandler(null_handler)
     
-    # Add file handler if log_file is specified
-    if log_file is not None:
-        # If log_file is empty string or just whitespace, use default filename
-        if not log_file.strip():
-            log_file = 'askgpt.log'
-        
-        try:
-            file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
-            file_handler.setLevel(log_level)
-            file_formatter = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
-            file_handler.setFormatter(file_formatter)
-            logger.addHandler(file_handler)
-            if debug:  # Only log this message if console logging is enabled
-                logger.info(f"Logging to file: {log_file}")
-        except Exception as e:
+    # Always add file handler - default to 'askgpt.log' if no file specified
+    if log_file is None or not log_file.strip():
+        log_file = 'askgpt.log'
+    
+    try:
+        file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+        file_handler.setLevel(log_level)
+        file_formatter = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+        if debug:  # Only log this message if console logging is enabled
+            logger.info(f"Logging to file: {log_file}")
+    except Exception as e:
             if debug:  # Only log this error if console logging is enabled
                 logger.error(f"Failed to set up file logging to {log_file}: {e}")
     
@@ -457,7 +454,7 @@ Options:
   --question-tokens N   Maximum tokens for question generation (default: {DEFAULT_MAX_TOKENS})
   --answer-tokens N     Maximum tokens for answer generation (default: {DEFAULT_MAX_TOKENS})
   --debug               Enable debug output showing warnings and fallback attempts
-  --log-file [PATH]     Enable file logging (default filename: askgpt.log if no path specified)
+  --log-file [PATH]     Specify log file path (default: askgpt.log)
   --help, -h            Show this help message
 
 Available Models:
@@ -507,7 +504,7 @@ def main():
     )
     parser.add_argument('--debug', action='store_true', help='Enable debug output')
     parser.add_argument('--log-file', type=str, default=None, nargs='?', const='askgpt.log',
-                       help='Path to log file (enables file logging)')
+                       help='Specify log file path (default: askgpt.log)')
     # Add other arguments for initial parsing
     parser.add_argument('--random', action='store_true')
     parser.add_argument('--topic')
@@ -553,7 +550,7 @@ def main():
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug output showing warnings and fallback attempts')
     parser.add_argument('--log-file', type=str, default=None, nargs='?', const='askgpt.log',
-                       help='Path to log file (enables file logging, default filename: askgpt.log)')
+                       help='Specify log file path (default: askgpt.log)')
     
     args = parser.parse_args()
     

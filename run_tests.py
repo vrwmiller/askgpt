@@ -58,7 +58,7 @@ def main():
         sys.exit(1)
     
     # Build the pytest command
-    cmd = ['python3', '-m', 'pytest', 'test_askgpt.py']
+    cmd = ['python3', '-m', 'pytest', 'tests/']
     
     if args.verbose:
         cmd.extend(['-v', '-s'])

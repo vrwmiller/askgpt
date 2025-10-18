@@ -143,6 +143,77 @@ class TestEventLogging(unittest.TestCase):
             if os.path.exists(temp_log_path):
                 os.unlink(temp_log_path)
 
+    def test_no_console_logging_by_default(self):
+        """Test that console logging is disabled by default"""
+        # Capture stderr to check for console output
+        captured_output = io.StringIO()
+        
+        with patch('sys.stderr', captured_output):
+            logger = setup_logging(debug=False, log_file=None)
+            logger.info("This should not appear in console")
+            logger.warning("This warning should not appear in console")
+        
+        # Should have no console output
+        output = captured_output.getvalue()
+        self.assertEqual(output, "")
+        
+        # Verify logger has no console handlers
+        console_handlers = [h for h in logger.handlers if isinstance(h, logging.StreamHandler)]
+        self.assertEqual(len(console_handlers), 0)
+
+    def test_console_logging_only_with_debug(self):
+        """Test that console logging only works when debug=True"""
+        # Capture stderr to check for console output
+        captured_output = io.StringIO()
+        
+        with patch('sys.stderr', captured_output):
+            logger = setup_logging(debug=True, log_file=None)
+            logger.info("This should appear in console")
+            logger.warning("This warning should appear in console")
+        
+        # Should have console output when debug=True
+        output = captured_output.getvalue()
+        self.assertIn("This should appear in console", output)
+        self.assertIn("This warning should appear in console", output)
+        
+        # Verify logger has console handler
+        console_handlers = [h for h in logger.handlers if isinstance(h, logging.StreamHandler)]
+        self.assertEqual(len(console_handlers), 1)
+
+    def test_file_logging_without_console(self):
+        """Test that file logging works without console logging"""
+        import tempfile
+        import os
+        
+        temp_log_path = None
+        try:
+            # Create a temporary log file
+            temp_fd, temp_log_path = tempfile.mkstemp(suffix='.log')
+            os.close(temp_fd)  # Close the file descriptor
+            
+            # Capture stderr to verify no console output
+            captured_output = io.StringIO()
+            
+            with patch('sys.stderr', captured_output):
+                logger = setup_logging(debug=False, log_file=temp_log_path)
+                logger.info("File only message")
+                logger.warning("File only warning")
+            
+            # Should have no console output
+            console_output = captured_output.getvalue()
+            self.assertEqual(console_output, "")
+            
+            # Should have file output
+            with open(temp_log_path, 'r') as f:
+                file_content = f.read()
+                self.assertIn("File only message", file_content)
+                self.assertIn("File only warning", file_content)
+                
+        finally:
+            # Clean up the temporary file
+            if temp_log_path and os.path.exists(temp_log_path):
+                os.unlink(temp_log_path)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -18,10 +18,33 @@ Author: Command-line interface for OpenAI ChatGPT
 """
 
 import argparse
+import logging
 import os
 import random
 import sys
+import time
 from openai import OpenAI
+
+# Logging configuration
+def setup_logging(debug=False):
+    """
+    Configure logging for the application.
+    
+    Args:
+        debug (bool): Whether to enable debug-level logging
+    """
+    log_level = logging.DEBUG if debug else logging.INFO
+    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    
+    logging.basicConfig(
+        level=log_level,
+        format=log_format,
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    
+    # Create logger for this module
+    logger = logging.getLogger('askgpt')
+    return logger
 
 # Configuration constants
 DEFAULT_MODEL = "gpt-5"  # Primary model to use by default
@@ -55,13 +78,18 @@ def fetch_available_models():
         Requires OPENAI_API_KEY environment variable to be set.
         This call may take a moment to complete on first run.
     """
+    logger = logging.getLogger('askgpt')
+    logger.info("Fetching available models from OpenAI API")
+    
     try:
         client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         models = client.models.list()
         # Extract just the model IDs from the API response objects
         model_names = [model.id for model in models]
+        logger.info(f"Successfully fetched {len(model_names)} models from API")
         return model_names
     except Exception as e:
+        logger.warning(f"Failed to fetch models from API: {e}")
         # Silently fail - caller will handle empty list appropriately
         print(f"Error fetching models: {e}")
         return []
@@ -83,11 +111,16 @@ def get_openai_client():
     Environment Variables:
         OPENAI_API_KEY: Required. Your OpenAI API key for authentication.
     """
+    logger = logging.getLogger('askgpt')
+    logger.info("Initializing OpenAI client")
+    
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
+        logger.error("OpenAI API key not found in environment variables")
         print("Error: OPENAI_API_KEY environment variable not set", file=sys.stderr)
         sys.exit(1)
     
+    logger.info("OpenAI client initialized successfully")
     return OpenAI(api_key=api_key)
 
 
@@ -176,7 +209,19 @@ def create_chat_completion(client, model, messages, max_tokens, temperature):
     if supports_custom_temperature(model):
         params['temperature'] = temperature
     
-    return client.chat.completions.create(**params)
+    logger = logging.getLogger('askgpt')
+    logger.info(f"Creating chat completion with model: {model}, max_tokens: {max_tokens}")
+    
+    start_time = time.time()
+    try:
+        response = client.chat.completions.create(**params)
+        elapsed_time = time.time() - start_time
+        logger.info(f"Chat completion successful in {elapsed_time:.2f}s")
+        return response
+    except Exception as e:
+        elapsed_time = time.time() - start_time
+        logger.error(f"Chat completion failed after {elapsed_time:.2f}s: {e}")
+        raise
 
 
 def generate_question(client, topic=None, model=DEFAULT_MODEL, max_tokens=DEFAULT_MAX_TOKENS, debug=False):
@@ -205,6 +250,10 @@ def generate_question(client, topic=None, model=DEFAULT_MODEL, max_tokens=DEFAUL
         fails or returns empty content, automatically falls back to gpt-4o
         for reliability.
     """
+    logger = logging.getLogger('askgpt')
+    topic_info = f"about '{topic}'" if topic else "random topic"
+    logger.info(f"Generating question {topic_info} using model: {model}")
+    
     # Craft the prompt based on whether a topic was specified
     if topic:
         prompt = f"Generate an interesting and thought-provoking question about {topic}. Only provide the question, no answer."
@@ -223,18 +272,22 @@ def generate_question(client, topic=None, model=DEFAULT_MODEL, max_tokens=DEFAUL
         
         # Validate response quality - some models return empty or very short responses
         if not question or len(question) < 10:
+            logger.warning(f"Model {model} returned short/empty question: '{question}'")
             if debug:
                 print(f"Warning: Model {model} returned an empty or very short response", file=sys.stderr)
                 print(f"Response received: '{question}'", file=sys.stderr)
             
             # If using default model and it fails, try fallback
             if model == DEFAULT_MODEL:
+                logger.info("Attempting fallback to gpt-4o")
                 if debug:
                     print("Trying with gpt-4o as fallback...", file=sys.stderr)
                 return generate_question(client, topic, "gpt-4o", max_tokens, debug)
         
+        logger.info(f"Question generated successfully (length: {len(question)} chars)")
         return question, model
     except Exception as e:
+        logger.error(f"Error generating question with {model}: {e}")
         if debug:
             print(f"Error generating question with {model}: {e}", file=sys.stderr)
         
@@ -242,10 +295,12 @@ def generate_question(client, topic=None, model=DEFAULT_MODEL, max_tokens=DEFAUL
         for fallback_model in FALLBACK_MODELS:
             if fallback_model != model:  # Don't retry the same model
                 try:
+                    logger.info(f"Trying fallback model: {fallback_model}")
                     if debug:
                         print(f"Trying fallback model: {fallback_model}", file=sys.stderr)
                     return generate_question(client, topic, fallback_model, max_tokens, debug)
                 except Exception as fallback_error:
+                    logger.warning(f"Fallback model {fallback_model} failed: {fallback_error}")
                     if debug:
                         print(f"Fallback model {fallback_model} also failed: {fallback_error}", file=sys.stderr)
                     continue
@@ -279,6 +334,9 @@ def get_answer(client, question, model=DEFAULT_MODEL, max_tokens=DEFAULT_MAX_TOK
         Uses moderate temperature (0.7) for balanced accuracy and creativity.
         Automatically falls back to gpt-4o if the primary model fails.
     """
+    logger = logging.getLogger('askgpt')
+    logger.info(f"Getting answer using model: {model} (question length: {len(question)} chars)")
+    
     try:
         response = create_chat_completion(
             client=client,
@@ -291,18 +349,22 @@ def get_answer(client, question, model=DEFAULT_MODEL, max_tokens=DEFAULT_MAX_TOK
         
         # Validate response quality - check for empty or too short responses
         if not answer or len(answer) < 10:
+            logger.warning(f"Model {model} returned short/empty answer: '{answer}'")
             if debug:
                 print(f"Warning: Model {model} returned an empty or very short response", file=sys.stderr)
                 print(f"Response received: '{answer}'", file=sys.stderr)
             
             # If using default model and it fails, try fallback
             if model == DEFAULT_MODEL:
+                logger.info("Attempting fallback to gpt-4o for answer generation")
                 if debug:
                     print("Trying with gpt-4o as fallback...", file=sys.stderr)
                 return get_answer(client, question, "gpt-4o", max_tokens, debug)
         
+        logger.info(f"Answer generated successfully (length: {len(answer)} chars)")
         return answer, model
     except Exception as e:
+        logger.error(f"Error getting answer with {model}: {e}")
         if debug:
             print(f"Error getting answer with {model}: {e}", file=sys.stderr)
         
@@ -310,15 +372,18 @@ def get_answer(client, question, model=DEFAULT_MODEL, max_tokens=DEFAULT_MAX_TOK
         for fallback_model in FALLBACK_MODELS:
             if fallback_model != model:  # Don't retry the same model
                 try:
+                    logger.info(f"Trying fallback model for answer: {fallback_model}")
                     if debug:
                         print(f"Trying fallback model: {fallback_model}", file=sys.stderr)
                     return get_answer(client, question, fallback_model, max_tokens, debug)
                 except Exception as fallback_error:
+                    logger.warning(f"Fallback model {fallback_model} failed for answer: {fallback_error}")
                     if debug:
                         print(f"Fallback model {fallback_model} also failed: {fallback_error}", file=sys.stderr)
                     continue
         
         # If all models fail, return error message
+        logger.error(f"All models failed to generate answer. Last error: {e}")
         print(f"Error: All models failed to get answer. Last error: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -396,6 +461,29 @@ def main():
         SystemExit: On various error conditions (missing API key, invalid
                    arguments, API failures, etc.)
     """
+    # Parse arguments first to check for debug mode
+    parser = argparse.ArgumentParser(
+        description="askgpt - A command line interface to ChatGPT",
+        add_help=False  # We'll handle help manually to include model list
+    )
+    parser.add_argument('--debug', action='store_true', help='Enable debug output')
+    # Add other arguments for initial parsing
+    parser.add_argument('--random', action='store_true')
+    parser.add_argument('--topic')
+    parser.add_argument('--question')
+    parser.add_argument('--model', default=DEFAULT_MODEL)
+    parser.add_argument('--question-tokens', type=int, default=DEFAULT_MAX_TOKENS)
+    parser.add_argument('--answer-tokens', type=int, default=DEFAULT_MAX_TOKENS)
+    parser.add_argument('--help', '-h', action='store_true')
+    
+    # Parse args to get debug flag early
+    args = parser.parse_args()
+    
+    # Set up logging based on debug flag
+    logger = setup_logging(debug=args.debug)
+    logger.info("=== askgpt session started ===")
+    logger.info(f"Command line arguments: {' '.join(sys.argv[1:])}")
+    
     # Seed random number generator for better randomness across sessions
     # This ensures different questions each time the script runs
     random.seed()
@@ -472,11 +560,19 @@ def main():
         if args.question:
             # === DIRECT QUESTION MODE ===
             # User provided the question directly, no generation needed
+            logger.info("Using direct question mode")
             question = args.question
             question_model = "user-provided"
             print(f"Question: {question}")
         else:
             # === QUESTION GENERATION PHASE ===
+            if args.random:
+                # Generate a question on any random topic
+                logger.info("Using random question generation mode")
+            else:
+                # Generate a question about a specific topic
+                logger.info(f"Using topic-based question generation mode: '{args.topic}'")
+            
             print("Generating question...")
             if args.random:
                 # Generate a question on any random topic
@@ -512,12 +608,16 @@ def main():
         # Display the generated answer with model attribution
         print(f"Answer (via {answer_model}): {answer}")
         
+        logger.info("=== askgpt session completed successfully ===")
+        
     except KeyboardInterrupt:
         # Handle user interruption gracefully
+        logger.info("Session cancelled by user")
         print("\nOperation cancelled by user", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         # Handle any unexpected errors with informative message
+        logger.error(f"Unexpected error: {e}")
         print(f"Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
 

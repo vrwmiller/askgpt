@@ -21,11 +21,95 @@ import argparse
 import logging
 import os
 import random
+import shutil
 import sys
+import textwrap
 import time
 from openai import OpenAI
 
 # Logging configuration
+def get_terminal_width():
+    """
+    Get the current terminal width, with fallback to 80 columns.
+    
+    Returns:
+        int: Terminal width in characters
+    """
+    try:
+        return shutil.get_terminal_size().columns
+    except (OSError, AttributeError):
+        return 80  # Fallback width for non-interactive environments
+
+
+def format_text_for_terminal(text, prefix="", indent=0):
+    """
+    Format text to fit terminal width without breaking words mid-line.
+    
+    This function ensures that long text output doesn't wrap awkwardly
+    in the terminal by inserting proper line breaks at word boundaries.
+    
+    Args:
+        text (str): The text to format
+        prefix (str): Prefix to add to the first line (e.g., "Question: ")
+        indent (int): Number of spaces to indent continuation lines
+    
+    Returns:
+        str: Formatted text with proper line breaks
+    """
+    if not text:
+        return f"{prefix}{text}"
+    
+    terminal_width = get_terminal_width()
+    
+    # Calculate available width for text content
+    first_line_width = terminal_width - len(prefix)
+    continuation_width = terminal_width - indent
+    
+    # Ensure minimum usable width
+    first_line_width = max(first_line_width, 40)
+    continuation_width = max(continuation_width, 40)
+    
+    # Split text into words for intelligent wrapping
+    words = text.split()
+    if not words:
+        return f"{prefix}{text}"
+    
+    lines = []
+    current_line = ""
+    current_width = first_line_width
+    
+    for word in words:
+        # Check if adding this word would exceed the current line width
+        test_line = f"{current_line} {word}".strip()
+        
+        if len(test_line) <= current_width:
+            current_line = test_line
+        else:
+            # Current line is full, start a new line
+            if current_line:
+                lines.append(current_line)
+            current_line = word
+            current_width = continuation_width
+    
+    # Add the last line if it has content
+    if current_line:
+        lines.append(current_line)
+    
+    # Format the output with proper prefixes and indentation
+    if not lines:
+        return f"{prefix}{text}"
+    
+    # First line gets the prefix
+    formatted_lines = [f"{prefix}{lines[0]}"]
+    
+    # Continuation lines get indentation
+    indent_str = " " * indent
+    for line in lines[1:]:
+        formatted_lines.append(f"{indent_str}{line}")
+    
+    return "\n".join(formatted_lines)
+
+
 def setup_logging(debug=False, log_file=None):
     """
     Configure logging for the application.
@@ -603,7 +687,7 @@ def main():
             logger.info("Using direct question mode")
             question = args.question
             question_model = "user-provided"
-            print(f"Question: {question}")
+            print(format_text_for_terminal(question, "Question: ", 10))
         else:
             # === QUESTION GENERATION PHASE ===
             if args.random:
@@ -633,7 +717,8 @@ def main():
                 )
             
             # Display the generated question with model attribution
-            print(f"Question (via {question_model}): {question}")
+            question_prefix = f"Question (via {question_model}): "
+            print(format_text_for_terminal(question, question_prefix, len(question_prefix)))
         
         # === ANSWER GENERATION PHASE ===
         print("\nGenerating answer...")
@@ -646,7 +731,8 @@ def main():
         )
         
         # Display the generated answer with model attribution
-        print(f"Answer (via {answer_model}): {answer}")
+        answer_prefix = f"Answer (via {answer_model}): "
+        print(format_text_for_terminal(answer, answer_prefix, len(answer_prefix)))
         
         logger.info("=== askgpt session completed successfully ===")
         

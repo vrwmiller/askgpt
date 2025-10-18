@@ -42,6 +42,7 @@ python3 askgpt.py [OPTIONS]
 - `--question-tokens N`: Maximum tokens for question generation (default: 512)
 - `--answer-tokens N`: Maximum tokens for answer generation (default: 512)
 - `--debug`: Enable debug output showing warnings and fallback attempts
+- `--log-file PATH`: Path to log file (default: askgpt.log)
 - `--help`, `-h`: Show help message
 
 ### Available Models
@@ -95,6 +96,12 @@ Enable debug output to see warnings and fallback attempts:
 python3 askgpt.py --random --debug
 ```
 
+Specify a custom log file:
+
+```bash
+python3 askgpt.py --random --log-file ./logs/session.log
+```
+
 ## Environment Variables
 
 - `OPENAI_API_KEY`: Your OpenAI API key (required)
@@ -111,7 +118,14 @@ The application includes comprehensive event logging to track operations and tro
 
 ### Log Output
 
-By default, logs are written to the console with timestamps. Example log output:
+Logs are written to both the console and a log file:
+
+- **Console**: Real-time output displayed in your terminal
+- **Log File**: Persistent storage (default: `askgpt.log` in current directory)
+
+Use `--log-file` to specify a different log file path, or set to an empty string to disable file logging.
+
+Example log output:
 
 ```text
 2025-10-17 20:57:33 - askgpt - INFO - === askgpt session started ===

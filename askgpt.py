@@ -26,24 +26,51 @@ import time
 from openai import OpenAI
 
 # Logging configuration
-def setup_logging(debug=False):
+def setup_logging(debug=False, log_file=None):
     """
     Configure logging for the application.
     
     Args:
         debug (bool): Whether to enable debug-level logging
+        log_file (str, optional): Path to log file. If None, logs only to console.
     """
     log_level = logging.DEBUG if debug else logging.INFO
     log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     
+    # Configure root logger
     logging.basicConfig(
         level=log_level,
         format=log_format,
-        datefmt='%Y-%m-%d %H:%M:%S'
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[]  # We'll add handlers manually
     )
     
     # Create logger for this module
     logger = logging.getLogger('askgpt')
+    logger.setLevel(log_level)
+    
+    # Remove any existing handlers to avoid duplicates
+    logger.handlers.clear()
+    
+    # Always add console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    console_formatter = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+    
+    # Add file handler if log_file is specified
+    if log_file:
+        try:
+            file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+            file_handler.setLevel(log_level)
+            file_formatter = logging.Formatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
+            file_handler.setFormatter(file_formatter)
+            logger.addHandler(file_handler)
+            logger.info(f"Logging to file: {log_file}")
+        except Exception as e:
+            logger.error(f"Failed to set up file logging to {log_file}: {e}")
+    
     return logger
 
 # Configuration constants
@@ -420,6 +447,7 @@ Options:
   --question-tokens N   Maximum tokens for question generation (default: {DEFAULT_MAX_TOKENS})
   --answer-tokens N     Maximum tokens for answer generation (default: {DEFAULT_MAX_TOKENS})
   --debug               Enable debug output showing warnings and fallback attempts
+  --log-file PATH       Path to log file (default: askgpt.log)
   --help, -h            Show this help message
 
 Available Models:
@@ -438,6 +466,7 @@ Examples:
   python3 askgpt.py --question "What are the benefits of renewable energy?"
   python3 askgpt.py --topic "cooking" --model gpt-4o-mini
   python3 askgpt.py --random --question-tokens 256 --answer-tokens 1024
+  python3 askgpt.py --random --debug --log-file ./logs/session.log
 """
     print(usage_text)
 
@@ -461,12 +490,14 @@ def main():
         SystemExit: On various error conditions (missing API key, invalid
                    arguments, API failures, etc.)
     """
-    # Parse arguments first to check for debug mode
+    # Parse arguments first to check for debug mode and log file
     parser = argparse.ArgumentParser(
         description="askgpt - A command line interface to ChatGPT",
         add_help=False  # We'll handle help manually to include model list
     )
     parser.add_argument('--debug', action='store_true', help='Enable debug output')
+    parser.add_argument('--log-file', type=str, default='askgpt.log', 
+                       help='Path to log file (default: askgpt.log)')
     # Add other arguments for initial parsing
     parser.add_argument('--random', action='store_true')
     parser.add_argument('--topic')
@@ -476,11 +507,11 @@ def main():
     parser.add_argument('--answer-tokens', type=int, default=DEFAULT_MAX_TOKENS)
     parser.add_argument('--help', '-h', action='store_true')
     
-    # Parse args to get debug flag early
+    # Parse args to get debug flag and log file early
     args = parser.parse_args()
     
-    # Set up logging based on debug flag
-    logger = setup_logging(debug=args.debug)
+    # Set up logging based on debug flag and log file
+    logger = setup_logging(debug=args.debug, log_file=args.log_file)
     logger.info("=== askgpt session started ===")
     logger.info(f"Command line arguments: {' '.join(sys.argv[1:])}")
     
@@ -511,6 +542,8 @@ def main():
                        help='Show this help message')
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug output showing warnings and fallback attempts')
+    parser.add_argument('--log-file', type=str, default='askgpt.log',
+                       help='Path to log file (default: askgpt.log)')
     
     args = parser.parse_args()
     

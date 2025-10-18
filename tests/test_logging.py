@@ -116,6 +116,32 @@ class TestEventLogging(unittest.TestCase):
         
         log_output = self.log_stream.getvalue()
         self.assertIn("Chat completion successful in 1.50s", log_output)
+    
+    def test_file_logging_setup(self):
+        """Test that file logging can be configured"""
+        import tempfile
+        import os
+        
+        # Create a temporary file for testing
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.log') as temp_file:
+            temp_log_path = temp_file.name
+        
+        try:
+            # Test file logging setup
+            logger = setup_logging(debug=False, log_file=temp_log_path)
+            logger.info("Test file logging message")
+            
+            # Verify the log file was created and contains our message
+            self.assertTrue(os.path.exists(temp_log_path))
+            
+            with open(temp_log_path, 'r') as f:
+                log_content = f.read()
+                self.assertIn("Test file logging message", log_content)
+                self.assertIn("askgpt", log_content)
+        finally:
+            # Clean up the temporary file
+            if os.path.exists(temp_log_path):
+                os.unlink(temp_log_path)
 
 
 if __name__ == '__main__':

@@ -41,8 +41,8 @@ python3 askgpt.py [OPTIONS]
 - `--model MODEL`: Specify the OpenAI model to use (default: gpt-5)
 - `--question-tokens N`: Maximum tokens for question generation (default: 512)
 - `--answer-tokens N`: Maximum tokens for answer generation (default: 512)
-- `--debug`: Enable debug output showing warnings and fallback attempts
-- `--log-file PATH`: Path to log file (default: askgpt.log)
+- `--debug`: Enable debug output and console logging
+- `--log-file [PATH]`: Enable file logging (default filename: askgpt.log if no path specified)
 - `--help`, `-h`: Show help message
 
 ### Available Models
@@ -118,12 +118,25 @@ The application includes comprehensive event logging to track operations and tro
 
 ### Log Output
 
-Logs are written to both the console and a log file:
+Event logging behavior depends on the command line options used:
 
-- **Console**: Real-time output displayed in your terminal
-- **Log File**: Persistent storage (default: `askgpt.log` in current directory)
+- **Default**: No console output, no file logging
+- **With `--debug`**: Console logging enabled (real-time output in terminal)
+- **With `--log-file`**: File logging enabled (persistent storage)
+- **With both**: Both console and file logging enabled
 
-Use `--log-file` to specify a different log file path, or set to an empty string to disable file logging.
+#### Console Logging
+
+Console logging is only enabled when using the `--debug` flag. This prevents verbose event output from cluttering the terminal during normal usage.
+
+#### File Logging  
+
+File logging is enabled with the `--log-file` option:
+
+- `--log-file` (no path): Uses default filename `askgpt.log` in current directory
+- `--log-file path/to/file.log`: Uses specified path
+
+Log files use append mode, so multiple sessions accumulate in the same file.
 
 Example log output:
 

@@ -42,7 +42,7 @@ python3 askgpt.py [OPTIONS]
 - `--question-tokens N`: Maximum tokens for question generation (default: 512)
 - `--answer-tokens N`: Maximum tokens for answer generation (default: 512)
 - `--debug`: Enable debug output and console logging
-- `--log-file [PATH]`: Enable file logging (default filename: askgpt.log if no path specified)
+- `--log-file [PATH]`: Specify log file path (default: askgpt.log)
 - `--help`, `-h`: Show help message
 
 ### Available Models
@@ -120,9 +120,9 @@ The application includes comprehensive event logging to track operations and tro
 
 Event logging behavior depends on the command line options used:
 
-- **Default**: No console output, no file logging
-- **With `--debug`**: Console logging enabled (real-time output in terminal)
-- **With `--log-file`**: File logging enabled (persistent storage)
+- **Default**: No console output, automatic file logging to `askgpt.log`
+- **With `--debug`**: Console logging enabled (real-time output in terminal) + file logging
+- **With `--log-file`**: File logging to specified path + no console output
 - **With both**: Both console and file logging enabled
 
 #### Console Logging
@@ -131,10 +131,10 @@ Console logging is only enabled when using the `--debug` flag. This prevents ver
 
 #### File Logging  
 
-File logging is enabled with the `--log-file` option:
+File logging is always enabled and defaults to `askgpt.log` in the current directory. Use the `--log-file` option to specify a different path:
 
-- `--log-file` (no path): Uses default filename `askgpt.log` in current directory
-- `--log-file path/to/file.log`: Uses specified path
+- **Default**: Events logged to `askgpt.log`
+- `--log-file path/to/file.log`: Events logged to specified path
 
 Log files use append mode, so multiple sessions accumulate in the same file.
 

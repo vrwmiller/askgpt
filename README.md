@@ -10,6 +10,28 @@ A command line interface to ChatGPT that generates random questions and provides
 - Control token limits for both questions and answers
 - Seeded randomization to prevent repetitive questions
 
+## Project Structure
+
+```text
+askgpt/
+├── askgpt.py           # Main application entry point
+├── README.md           # Project documentation
+├── LICENSE             # MIT license
+├── requirements.txt    # Python dependencies
+├── setup.cfg           # Pytest and tool configuration
+├── .gitignore          # Git ignore patterns
+├── config/             # Configuration files
+│   └── .vscode/        # VS Code settings
+├── scripts/            # Development utilities
+│   └── run_tests.py    # Test runner script
+├── tests/              # Test suite
+│   ├── test_askgpt.py  # Main application tests
+│   └── test_logging.py # Logging functionality tests
+├── logs/               # Log files directory
+│   └── askgpt.log      # Default log file location
+└── docs/               # Documentation (future use)
+```
+
 ## Installation
 
 1. Clone this repository
@@ -42,7 +64,7 @@ python3 askgpt.py [OPTIONS]
 - `--question-tokens N`: Maximum tokens for question generation (default: 512)
 - `--answer-tokens N`: Maximum tokens for answer generation (default: 512)
 - `--debug`: Enable debug output and console logging
-- `--log-file [PATH]`: Specify log file path (default: askgpt.log)
+- `--log-file [PATH]`: Specify log file path (default: logs/askgpt.log)
 - `--help`, `-h`: Show help message
 
 ### Available Models
@@ -120,7 +142,7 @@ The application includes comprehensive event logging to track operations and tro
 
 Event logging behavior depends on the command line options used:
 
-- **Default**: No console output, automatic file logging to `askgpt.log`
+- **Default**: No console output, automatic file logging to `logs/askgpt.log`
 - **With `--debug`**: Console logging enabled (real-time output in terminal) + file logging
 - **With `--log-file`**: File logging to specified path + no console output
 - **With both**: Both console and file logging enabled
@@ -131,9 +153,9 @@ Console logging is only enabled when using the `--debug` flag. This prevents ver
 
 #### File Logging  
 
-File logging is always enabled and defaults to `askgpt.log` in the current directory. Use the `--log-file` option to specify a different path:
+File logging is always enabled and defaults to `logs/askgpt.log` in the logs directory. Use the `--log-file` option to specify a different path:
 
-- **Default**: Events logged to `askgpt.log`
+- **Default**: Events logged to `logs/askgpt.log`
 - `--log-file path/to/file.log`: Events logged to specified path
 
 Log files use append mode, so multiple sessions accumulate in the same file.
